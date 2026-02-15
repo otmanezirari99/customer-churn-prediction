@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Models
+models/*.pkl
+models/*.joblib
+models/*.h5
+
+# Data (optionnel - décommenter si vous ne voulez pas versionner les données)
+# data/*.csv
+# data/*.pkl
+
+# Reports (optionnel)
+# reports/*.png
+# reports/*.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+

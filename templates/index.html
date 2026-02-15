@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Churn Prediction</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111a2e;
+      --muted: #8ea1c0;
+      --text: #e8eefc;
+      --primary: #4f7cff;
+      --danger: #ff5b6e;
+      --border: rgba(255,255,255,0.08);
+      --shadow: 0 12px 40px rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      background: radial-gradient(1200px 500px at 15% 10%, rgba(79,124,255,0.25), transparent 60%),
+                  radial-gradient(900px 400px at 80% 15%, rgba(0,214,255,0.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+    .container { max-width: 1100px; margin: 28px auto; padding: 0 16px 48px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 18px; }
+    .title { margin: 0; font-size: 28px; letter-spacing: 0.2px; }
+    .subtitle { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+    .badge { padding: 6px 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); border-radius: 999px; color: var(--muted); font-size: 12px; }
+    .grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 16px; align-items: start; }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card .card-hd { padding: 16px 16px 10px; border-bottom: 1px solid var(--border); }
+    .card .card-hd h2 { margin: 0; font-size: 16px; }
+    .card .card-hd p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .card .card-bd { padding: 16px; }
+    form { margin: 0; }
+    .section { margin-bottom: 16px; }
+    .section-title { margin: 0 0 10px; color: var(--muted); font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; color: #cfe0ff; }
+    .field input, .field select {
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+      color: var(--text);
+      outline: none;
+    }
+    .field input::placeholder { color: rgba(232,238,252,0.45); }
+    .field input:focus, .field select:focus { border-color: rgba(79,124,255,0.6); box-shadow: 0 0 0 4px rgba(79,124,255,0.15); }
+    .actions { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 8px; }
+    .btn {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(79,124,255,0.45);
+      background: linear-gradient(180deg, rgba(79,124,255,0.9), rgba(79,124,255,0.65));
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .btn:active { transform: translateY(1px); }
+    .helper { color: var(--muted); font-size: 12px; }
+    .result {
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.22);
+    }
+    .kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .kpi .box { padding: 12px; border: 1px solid var(--border); border-radius: 14px; background: rgba(255,255,255,0.03); }
+    .kpi .label { font-size: 12px; color: var(--muted); }
+    .kpi .value { margin-top: 6px; font-size: 18px; font-weight: 700; }
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
+    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--primary); }
+    .dot.danger { background: var(--danger); }
+    .error { border-color: rgba(255,91,110,0.5); background: rgba(255,91,110,0.08); color: #ffd7dd; }
+    .footer-note { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    @media (max-width: 920px) { .grid { grid-template-columns: 1fr; } .fields { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 class="title">Customer Churn Prediction</h1>
+        <p class="subtitle">Enter a customer profile and get a churn risk prediction.</p>
+      </div>
+      <div class="badge">Model: best_model.pkl</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-hd">
+          <h2>Client Information</h2>
+          <p>Fill in the fields below then click <b>Predict</b>.</p>
+        </div>
+        <div class="card-bd">
+          <form method="post" action="/predict-form">
+            <div class="section">
+              <p class="section-title">Profile</p>
+              <div class="fields">
+                <div class="field">
+                  <label for="gender">Gender</label>
+                  <select id="gender" name="gender">
+                    {% for opt in schema['gender'] %}
+                      <option value="{{ opt }}" {% if values['gender']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="SeniorCitizen">Senior Citizen</label>
+                  <select id="SeniorCitizen" name="SeniorCitizen">
+                    {% for opt in schema['SeniorCitizen'] %}
+                      <option value="{{ opt }}" {% if values['SeniorCitizen']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="Partner">Partner</label>
+                  <select id="Partner" name="Partner">
+                    {% for opt in schema['Partner'] %}
+                      <option value="{{ opt }}" {% if values['Partner']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="Dependents">Dependents</label>
+                  <select id="Dependents" name="Dependents">
+                    {% for opt in schema['Dependents'] %}
+                      <option value="{{ opt }}" {% if values['Dependents']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="tenure">Tenure (months)</label>
+                  <input id="tenure" name="tenure" type="number" min="0" step="1" value="{{ values['tenure'] }}" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <p class="section-title">Services</p>
+              <div class="fields">
+                <div class="field">
+                  <label for="PhoneService">Phone Service</label>
+                  <select id="PhoneService" name="PhoneService">
+                    {% for opt in schema['PhoneService'] %}
+                      <option value="{{ opt }}" {% if values['PhoneService']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="MultipleLines">Multiple Lines</label>
+                  <select id="MultipleLines" name="MultipleLines">
+                    {% for opt in schema['MultipleLines'] %}
+                      <option value="{{ opt }}" {% if values['MultipleLines']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="InternetService">Internet Service</label>
+                  <select id="InternetService" name="InternetService">
+                    {% for opt in schema['InternetService'] %}
+                      <option value="{{ opt }}" {% if values['InternetService']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="OnlineSecurity">Online Security</label>
+                  <select id="OnlineSecurity" name="OnlineSecurity">
+                    {% for opt in schema['OnlineSecurity'] %}
+                      <option value="{{ opt }}" {% if values['OnlineSecurity']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="OnlineBackup">Online Backup</label>
+                  <select id="OnlineBackup" name="OnlineBackup">
+                    {% for opt in schema['OnlineBackup'] %}
+                      <option value="{{ opt }}" {% if values['OnlineBackup']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="DeviceProtection">Device Protection</label>
+                  <select id="DeviceProtection" name="DeviceProtection">
+                    {% for opt in schema['DeviceProtection'] %}
+                      <option value="{{ opt }}" {% if values['DeviceProtection']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="TechSupport">Tech Support</label>
+                  <select id="TechSupport" name="TechSupport">
+                    {% for opt in schema['TechSupport'] %}
+                      <option value="{{ opt }}" {% if values['TechSupport']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="StreamingTV">Streaming TV</label>
+                  <select id="StreamingTV" name="StreamingTV">
+                    {% for opt in schema['StreamingTV'] %}
+                      <option value="{{ opt }}" {% if values['StreamingTV']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="StreamingMovies">Streaming Movies</label>
+                  <select id="StreamingMovies" name="StreamingMovies">
+                    {% for opt in schema['StreamingMovies'] %}
+                      <option value="{{ opt }}" {% if values['StreamingMovies']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <p class="section-title">Billing</p>
+              <div class="fields">
+                <div class="field">
+                  <label for="Contract">Contract</label>
+                  <select id="Contract" name="Contract">
+                    {% for opt in schema['Contract'] %}
+                      <option value="{{ opt }}" {% if values['Contract']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="PaperlessBilling">Paperless Billing</label>
+                  <select id="PaperlessBilling" name="PaperlessBilling">
+                    {% for opt in schema['PaperlessBilling'] %}
+                      <option value="{{ opt }}" {% if values['PaperlessBilling']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="PaymentMethod">Payment Method</label>
+                  <select id="PaymentMethod" name="PaymentMethod">
+                    {% for opt in schema['PaymentMethod'] %}
+                      <option value="{{ opt }}" {% if values['PaymentMethod']==opt %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="MonthlyCharges">Monthly Charges</label>
+                  <input id="MonthlyCharges" name="MonthlyCharges" type="number" step="0.01" min="0" value="{{ values['MonthlyCharges'] }}" required />
+                </div>
+
+                <div class="field">
+                  <label for="TotalCharges">Total Charges</label>
+                  <input id="TotalCharges" name="TotalCharges" type="number" step="0.01" min="0" value="{{ values['TotalCharges'] }}" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn" type="submit">Predict</button>
+              <span class="helper">Your data stays on your server (local Flask).</span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <h2>Prediction Result</h2>
+          <p>Churn risk for the customer you entered.</p>
+        </div>
+        <div class="card-bd">
+          {% if error %}
+            <div class="result error">
+              <b>Error:</b> {{ error }}
+            </div>
+          {% elif result %}
+            <div class="result">
+              <div class="pill">
+                {% if result['prediction'] == 1 %}
+                  <span class="dot danger"></span>
+                {% else %}
+                  <span class="dot"></span>
+                {% endif %}
+                <div>
+                  <div style="font-weight: 700;">{{ result['prediction_label'] }}</div>
+                  <div class="helper">Binary prediction (0/1): {{ result['prediction'] }}</div>
+                </div>
+              </div>
+
+              <div class="kpi">
+                <div class="box">
+                  <div class="label">Probability of churn</div>
+                  <div class="value">
+                    {% if result['probability_churn'] is not none %}
+                      {{ '%.3f'|format(result['probability_churn']) }}
+                    {% else %}
+                      N/A
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="box">
+                  <div class="label">Interpretation</div>
+                  <div class="value">
+                    {% if result['probability_churn'] is not none and result['probability_churn'] >= 0.5 %}
+                      High risk
+                    {% elif result['probability_churn'] is not none %}
+                      Lower risk
+                    {% else %}
+                      Available (no proba)
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="result">
+              Fill the form and click <b>Predict</b> to see the result here.
+            </div>
+          {% endif %}
+
+          <div class="footer-note">
+            Tip: If you deploy to a server, run with <code>waitress</code>:
+            <code>python -m waitress --host=0.0.0.0 --port=5000 app:app</code>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
